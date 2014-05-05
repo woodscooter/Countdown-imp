@@ -6,7 +6,7 @@
 //const bustop = "57522";	// Mariner Gardens, 371 towards Kingston
 //const bustop = "57628";		// 371 Lock Road to Richmond
 //const bustop = "51066";		// 371 Lock Road to Kingston
-const bustop = "47860";	// Ham Street, 371 towards Richmond
+const bustop = "50869";	// Ham Street, 371 towards Richmond
 //const bustop = "47140";	// Ham Street, 371 towards Kingston
 //const bustop2 = "71738";  // Ham Gate Ave, 65 to Richmond
 //const bustop = "58363";	// The Dysart, 371, 65 towards Richmond
@@ -155,6 +155,7 @@ function Initialise(dummy) {
 
 	// allow 2-3 seconds for LCD to settle
 	// then get initial screen displays
+	prevbusInfo=[{string=""},{string=""},{string=""}];
     imp.wakeup(2, getBusTimes);
     imp.wakeup(3, getConditions);
 }
