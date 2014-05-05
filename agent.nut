@@ -1,20 +1,29 @@
 
-// Countdown
+// Countdown, with destination select
+
+// Put first-choice and second-choice bus stop numbers into this array:
+local Selector = ["58627", "50869"];
+
+// Push button on Imp pin 1 toggles between the two destinations.
+
+// A list of local bus stops
 //const bustop = "47140";	// Test street
 //const bustop = "47860";	// Fox & Duck
 //const bustop = "57780";	// Mariner Gardens, 371 towards Richmond
 //const bustop = "57522";	// Mariner Gardens, 371 towards Kingston
 //const bustop = "57628";		// 371 Lock Road to Richmond
 //const bustop = "51066";		// 371 Lock Road to Kingston
-const bustop = "50869";	// Ham Street, 371 towards Richmond
-//const bustop = "47140";	// Ham Street, 371 towards Kingston
-//const bustop2 = "71738";  // Ham Gate Ave, 65 to Richmond
+//const bustop = "58627";	// Ham Street, 371 towards Richmond
+//const bustop = "50869";	// Ham Street, 371 towards Kingston
+//const bustop = "71738";  // Ham Gate Ave, 65 to Richmond
 //const bustop = "58363";	// The Dysart, 371, 65 towards Richmond
 //const bustop = "57660";	// Ham Parade, 65 towards Kingston
 //const bustop = "47140";	// Richmond Road, 371 towards Kingston
 
-local tflURL = "http://countdown.tfl.gov.uk/stopBoard/"+bustop+"/";
-//local tflURL2 = "http://countdown.tfl.gov.uk/stopBoard/"+bustop2+"/";
+
+local tflBASE = "http://countdown.tfl.gov.uk/stopBoard/";
+local tflURL;
+local destSelect =0;	// 0 = first choice, 1 = second choice destination
 
 // Add your own wunderground API Key here. 
 // Register for free at http://api.wunderground.com/weather/api/
@@ -32,11 +41,26 @@ local reportType = "conditions";
 // Global store of the three lines being displayed by the imp screen
 local prevbusInfo=[{string=""},{string=""},{string=""}];
 
+// Global timer handles
+local busTimer;
+local wuTimer;
+
+function newDestination (dest) {
+	destSelect = dest;
+	prevbusInfo=[{string=""},{string=""},{string=""}];
+ 	getBusTimes();
+}
+
+
 function getBusTimes() {
-    imp.wakeup(31, getBusTimes);	// new bus data available every 30s
+	imp.cancelwakeup(busTimer);		// cancel any previously set timer
+    busTimer = imp.wakeup(31, getBusTimes);	// new bus data available every 30s
     
 	// Request the bus data
-    server.log(format("Getting data for stop: %s", bustop));
+    server.log(format("Destination: %d", destSelect));
+	tflURL = tflBASE + Selector[destSelect] + "/";
+
+    server.log(format("Getting data for stop: %s", Selector[destSelect]));
     // server.log(format("Sending request to %s", tflURL));
     local req = http.get(tflURL);
     local res = req.sendsync();
@@ -108,7 +132,8 @@ function getBusTimes() {
       
 
 function getConditions() {
-    imp.wakeup(900, getConditions);	// every 15 minutes
+	imp.cancelwakeup(wuTimer);		// cancel any previously set timer
+    wuTimer = imp.wakeup(900, getConditions);	// every 15 minutes
     
 //    server.log(format("Agent getting current conditions for %s", zip));
     // register the next run of this function, so we'll check again in five minutes
@@ -139,7 +164,7 @@ function getConditions() {
     local forecastString = "";
     
     // Chunk together our forecast into a printable string
-    server.log(format("Obtained forecast for ", weather.display_location.city));
+    // server.log(format("Obtained forecast for ", weather.display_location.city));
     forecastString += ("Temp "+weather.feelslike_c+"C");
 
 
@@ -156,11 +181,12 @@ function Initialise(dummy) {
 	// allow 2-3 seconds for LCD to settle
 	// then get initial screen displays
 	prevbusInfo=[{string=""},{string=""},{string=""}];
-    imp.wakeup(2, getBusTimes);
-    imp.wakeup(3, getConditions);
+    busTimer = imp.wakeup(2, getBusTimes);
+    wuTimer = imp.wakeup(3, getConditions);
 }
 
 device.on("reset",Initialise);
 
+device.on("newbus",newDestination);
 
 

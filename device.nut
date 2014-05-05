@@ -420,7 +420,8 @@ local state = button.read();
 		else {
 			if (buttonState == 1) {
 				server.log("button pressed");
-				buttonSelect ^= 1;
+				++buttonSelect &= 1;
+				server.log("buttonSelect");
 				agent.send("newbus",buttonSelect);
 			}
 			buttonState = 0;
