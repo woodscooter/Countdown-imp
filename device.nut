@@ -2,7 +2,9 @@
 
 
 local blankString = "                    "; // String to blank a line.
-local State = 0; // Button State.
+local buttonState = 0; // Button State.
+local buttonCount = 0; // Button Count.
+
 
 class LowLevelLcd {
     i2cPort = null;
@@ -379,24 +381,8 @@ function updateClock()
     imp.wakeup(1, updateClock);
 }
 
-function buttonCheck()
-{
-    if (hardware.pin1.read())
-    {
-        State = State ? 0 : 1; // Flip flop State
-        server.log(State);
-    }
-    pending = false;
-}
 
-function whenChanged()
-{
-    if (!pending)
-    {   
-        pending = true;
         imp.wakeup(0.100, buttonCheck);
-    }
-}
 
 if (hardware.wakereason() == WAKEREASON_POWER_ON || hardware.wakereason() == WAKEREASON_NEW_SQUIRREL) 
     {
@@ -408,16 +394,35 @@ if (hardware.wakereason() == WAKEREASON_POWER_ON || hardware.wakereason() == WAK
 agent.on("weather",weatherHandeler);    
 agent.on("busData",newDataHandeler);
 
-//Button with some debounce time
-local pending = false;
-local output = OutputPort("Result", "number");
 
-//define input pin
-hardware.pin1.configure(DIGITAL_IN_PULLUP, whenChanged);
-hardware.pin2.configure(DIGITAL_IN_PULLUP, whenChanged);
-hardware.pin5.configure(DIGITAL_IN_PULLUP, whenChanged);
+// Push button
+button <- hardware.pin1;
+
+function buttonCheck() {
+
+local state = button.read();
+
+	if (state == 1) {
+		server.log("button released");
+		if (--buttonCount > 0)	{
+       		imp.wakeup(0.100, buttonCheck);
+		}
+		else {
+			buttonState = 1;
+		}
+	}
+	else	{
+		server.log("button pressed");
+		if (++buttonCount < 3)	{
+       		imp.wakeup(0.100, buttonCheck);
+		}
+		else {
+			buttonState = 0;
+		}
+	}
+}
+button.configure(DIGITAL_IN_PULLUP, buttonCheck)
 
 updateClock(); // fire updateClock() for the first time
 
-// Register with the server
-// imp.configure("Imp Lcd Bus countdown", [], []);
+
