@@ -1,9 +1,10 @@
-
+ 
 
 
 local blankString = "                    "; // String to blank a line.
 local buttonState = 0; // Button State.
 local buttonCount = 0; // Button Count.
+local buttonSelect = 0; //	Selection of destination
 
 
 class LowLevelLcd {
@@ -382,8 +383,6 @@ function updateClock()
 }
 
 
-        imp.wakeup(0.100, buttonCheck);
-
 if (hardware.wakereason() == WAKEREASON_POWER_ON || hardware.wakereason() == WAKEREASON_NEW_SQUIRREL) 
     {
         server.log("imp booting")
@@ -395,7 +394,7 @@ agent.on("weather",weatherHandeler);
 agent.on("busData",newDataHandeler);
 
 
-// Push button
+// Push button with debounce
 button <- hardware.pin1;
 
 function buttonCheck() {
@@ -403,21 +402,29 @@ function buttonCheck() {
 local state = button.read();
 
 	if (state == 1) {
-		server.log("button released");
 		if (--buttonCount > 0)	{
-       		imp.wakeup(0.100, buttonCheck);
+       		imp.wakeup(0.200, buttonCheck);
 		}
 		else {
+			if (buttonState == 0) {
+				server.log("button released");
+			}
 			buttonState = 1;
+			buttonCount = 0;
 		}
 	}
 	else	{
-		server.log("button pressed");
 		if (++buttonCount < 3)	{
-       		imp.wakeup(0.100, buttonCheck);
+       		imp.wakeup(0.200, buttonCheck);
 		}
 		else {
+			if (buttonState == 1) {
+				server.log("button pressed");
+				buttonSelect ^= 1;
+				agent.send("newbus",buttonSelect);
+			}
 			buttonState = 0;
+			buttonCount = 3;
 		}
 	}
 }
