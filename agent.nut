@@ -33,7 +33,7 @@ local reportType = "conditions";
 local prevbusInfo=[{string=""},{string=""},{string=""}];
 
 function getBusTimes() {
-    imp.wakeup(16, getBusTimes);	// new bus data available every 30s
+    imp.wakeup(31, getBusTimes);	// new bus data available every 30s
     
 	// Request the bus data
     server.log(format("Getting data for stop: %s", bustop));
