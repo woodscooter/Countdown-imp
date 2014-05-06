@@ -6,6 +6,8 @@ local buttonState = 0; // Button State.
 local buttonCount = 0; // Button Count.
 local buttonSelect = 0; //	Selection of destination
 
+// Timer handle
+local clockTimer;
 
 class LowLevelLcd {
     i2cPort = null;
@@ -370,6 +372,10 @@ local march, october;
 
 function updateClock()
 {
+    // update the clock again in 1 second
+	imp.cancelwakeup(clockTimer);		// cancel any previously set timer
+    clockTimer = imp.wakeup(1, updateClock);
+
     local t = date();
     local hour = t.hour+bst_adjust(t);
     if (hour>23) hour = 0;
@@ -378,8 +384,8 @@ function updateClock()
     lcd.setCursor(0, 0);
     lcd.writeString(format("%02d:%02d:%02d", hour, t.min, t.sec));
 
-    // update the clock again in 1 second
-    imp.wakeup(1, updateClock);
+	// notify the Agent that we are still alive
+	agent.send("alive",0);
 }
 
 
