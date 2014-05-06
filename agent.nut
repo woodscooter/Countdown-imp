@@ -60,7 +60,7 @@ function getBusTimes() {
 	imp.cancelwakeup(busTimer);		// cancel any previously set timer
 	if (heartbeat)	{
 		--heartbeat;	// Use up one heartbeat
-    	busTimer = imp.wakeup(31, getBusTimes);	// new bus data available every 30s
+    	busTimer = imp.wakeup(30, getBusTimes);	// new bus data available every 30s
     }
 
 	// Request the bus data
@@ -195,7 +195,11 @@ function Initialise(dummy) {
     wuTimer = imp.wakeup(3, getConditions);
 }
 
-function DeviceUp() {
+function DeviceUp(dummy) {
+    // Just come back to life?
+    if (heartbeat==0) {
+        Initialise(1);
+    }
 	// The Device is on, so recharge the heartbeat count
 	heartbeat = 4;
 }

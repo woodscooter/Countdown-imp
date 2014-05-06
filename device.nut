@@ -373,8 +373,9 @@ local march, october;
 function updateClock()
 {
     // update the clock again in 1 second
-	imp.cancelwakeup(clockTimer);		// cancel any previously set timer
-    clockTimer = imp.wakeup(1, updateClock);
+//	imp.cancelwakeup(clockTimer);		// cancel any previously set timer
+//    clockTimer = imp.wakeup(1, updateClock);
+    imp.wakeup(1, updateClock);
 
     local t = date();
     local hour = t.hour+bst_adjust(t);
@@ -426,7 +427,8 @@ local state = button.read();
 		else {
 			if (buttonState == 1) {
 				server.log("button pressed");
-				++buttonSelect &= 1;
+				++buttonSelect;
+				buttonSelect = buttonSelect &1;
 				server.log("buttonSelect");
 				agent.send("newbus",buttonSelect);
 			}
