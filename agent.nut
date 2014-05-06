@@ -45,6 +45,9 @@ local prevbusInfo=[{string=""},{string=""},{string=""}];
 local busTimer;
 local wuTimer;
 
+// To detect when device is off
+local heartbeat =0;
+
 function newDestination (dest) {
 	destSelect = dest;
 	prevbusInfo=[{string=""},{string=""},{string=""}];
@@ -53,9 +56,13 @@ function newDestination (dest) {
 
 
 function getBusTimes() {
+
 	imp.cancelwakeup(busTimer);		// cancel any previously set timer
-    busTimer = imp.wakeup(31, getBusTimes);	// new bus data available every 30s
-    
+	if (heartbeat)	{
+		--heartbeat;	// Use up one heartbeat
+    	busTimer = imp.wakeup(31, getBusTimes);	// new bus data available every 30s
+    }
+
 	// Request the bus data
     server.log(format("Destination: %d", destSelect));
 	tflURL = tflBASE + Selector[destSelect] + "/";
@@ -133,7 +140,10 @@ function getBusTimes() {
 
 function getConditions() {
 	imp.cancelwakeup(wuTimer);		// cancel any previously set timer
-    wuTimer = imp.wakeup(900, getConditions);	// every 15 minutes
+	if (heartbeat)	{
+		--heartbeat;	// Use up one heartbeat
+    	wuTimer = imp.wakeup(900, getConditions);	// every 15 minutes
+	}
     
 //    server.log(format("Agent getting current conditions for %s", zip));
     // register the next run of this function, so we'll check again in five minutes
@@ -185,7 +195,13 @@ function Initialise(dummy) {
     wuTimer = imp.wakeup(3, getConditions);
 }
 
+function DeviceUp() {
+	// The Device is on, so recharge the heartbeat count
+	heartbeat = 4;
+}
+
 device.on("reset",Initialise);
+device.on("alive",DeviceUp);
 
 device.on("newbus",newDestination);
 
