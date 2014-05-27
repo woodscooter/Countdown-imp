@@ -3,7 +3,7 @@
 
 // Put first-choice, second-choice and more bus stop numbers into this array:
 // Limit is 7 bus stops
-local Selector = ["58627", "50869"];
+local Selector = ["57628", "47140", "58627"];
 
 // Push button on Imp pin 1 toggles between the two destinations.
 
@@ -29,7 +29,7 @@ local tflURL;
 local indBASE = "http://countdown.api.tfl.gov.uk/interfaces/ura/instant_V1?StopCode1=";
 local indTAIL = "&StopAlso=true&ReturnList=StopPointIndicator";
 local indURL = "";
-local indicator = null;
+local indicator;
 
 // Selection of one from 7 bus stops (0..6)
 local destSelect =0;	// 0 = first choice, 1 = second choice destination, ...
@@ -58,10 +58,12 @@ local wuTimer;
 local heartbeat =0;
 
 function newDestination (dest) {
+	if (dest >= Selector.len())
+		dest = 0;
 	destSelect = dest;
 	prevbusInfo=[{string=""},{string=""},{string=""}];
 	indURL = "";
-	indicator = null;
+	indicator = "";
  	getBusTimes();
 }
 
@@ -163,14 +165,14 @@ function getBusTimes() {
 		// Pick the Bus Stop Indicator from the response
 		// format is [4,"1.0",1401143349197] [0,"W"]  where W is the indicator, otherwise null
 		// it's not valid JSON, try using regex
-		local ex = regexp(@",(\d+).+,(.\w*\d?.)");
+		local ex = regexp(@",\d+.+,(\p\w+\d?\p)");
 		local result = ex.capture(res.body);
 		if (result) {
-		    indicator = res.body.slice(result[2].begin,result[2].end);
+		    indicator = res.body.slice(result[1].begin,result[1].end);
 		} else {
-		    indicator = ".";
+		    indicator = "";
 		}
-		server.log(format("Indicator is %s",indicator));
+		server.log(format("Indicator is %s", indicator));
     	device.send("BusStopInd", indicator);
 		
  	}

@@ -312,13 +312,22 @@ function newDataHandeler(busInfo)
          }
     }
 
+function indicatorHandeler(indicator)
+    {
+// 		buttonSelect = indicator.index;
+  		lcd.setCursor(15, 0);
+   		lcd.writeString("     ");
+   		lcd.setCursor(15, 0);
+   		lcd.writeString(indicator);
+	}
+
 function weatherHandeler(forecastString)
     {
         // update the display screen with the new data
         server.log(forecastString);
-        lcd.setCursor(9, 0);
-        lcd.writeString("           ");
-        lcd.setCursor(9, 0);
+        lcd.setCursor(6, 0);
+        lcd.writeString("      ");
+        lcd.setCursor(6, 0);
         lcd.writeString(forecastString);
     }
 
@@ -383,7 +392,12 @@ function updateClock()
 
     // move to the first row, first column
     lcd.setCursor(0, 0);
-    lcd.writeString(format("%02d:%02d:%02d", hour, t.min, t.sec));
+//    lcd.writeString(format("%02d:%02d:%02d", hour, t.min, t.sec));
+	if (t.sec & 1)	{
+    	lcd.writeString(format("%02d %02d", hour, t.min));
+	} else 	{
+    	lcd.writeString(format("%02d:%02d", hour, t.min));
+	}
 
 	// notify the Agent that we are still alive
 	agent.send("alive",0);
@@ -399,6 +413,7 @@ if (hardware.wakereason() == WAKEREASON_POWER_ON || hardware.wakereason() == WAK
 
 agent.on("weather",weatherHandeler);    
 agent.on("busData",newDataHandeler);
+agent.on("BusStopInd",indicatorHandeler);
 
 
 // Push button with debounce
@@ -428,7 +443,7 @@ local state = button.read();
 			if (buttonState == 1) {
 				server.log("button pressed");
 				++buttonSelect;
-				buttonSelect = buttonSelect &1;
+				buttonSelect = buttonSelect &7;
 				server.log("buttonSelect");
 				agent.send("newbus",buttonSelect);
 			}
