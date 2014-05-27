@@ -1,8 +1,9 @@
 
 // Countdown, with destination select
 
-// Put first-choice and second-choice bus stop numbers into this array:
-local Selector = ["58627", "50869"];
+// Put first-choice, second-choice and more bus stop numbers into this array:
+// Limit is 7 bus stops
+local Selector = ["57628", "47140", "58627"];
 
 // Push button on Imp pin 1 toggles between the two destinations.
 
@@ -23,7 +24,15 @@ local Selector = ["58627", "50869"];
 
 local tflBASE = "http://countdown.tfl.gov.uk/stopBoard/";
 local tflURL;
-local destSelect =0;	// 0 = first choice, 1 = second choice destination
+
+// for fetching bus stop indicator
+local indBASE = "http://countdown.api.tfl.gov.uk/interfaces/ura/instant_V1?StopCode1=";
+local indTAIL = "&StopAlso=true&ReturnList=StopPointIndicator";
+local indURL = "";
+local indicator;
+
+// Selection of one from 7 bus stops (0..6)
+local destSelect =0;	// 0 = first choice, 1 = second choice destination, ...
 
 // Add your own wunderground API Key here. 
 // Register for free at http://api.wunderground.com/weather/api/
@@ -49,8 +58,12 @@ local wuTimer;
 local heartbeat =0;
 
 function newDestination (dest) {
+	if (dest >= Selector.len())
+		dest = 0;
 	destSelect = dest;
 	prevbusInfo=[{string=""},{string=""},{string=""}];
+	indURL = "";
+	indicator = "";
  	getBusTimes();
 }
 
@@ -135,6 +148,34 @@ function getBusTimes() {
             device.send("busData",busInfo[i]);
         }
       }
+
+		// check for a Bus Stop Indicator, if necessary
+	if (indURL == "") {
+		indURL = indBASE + Selector[destSelect] + indTAIL;
+
+    	server.log(format("Sending request: %s", indURL));
+    	req = http.get(indURL);
+    	res = req.sendsync();
+    
+    	// check the status code on the response to verify that it's what we actually wanted.
+    	if (res.statuscode != 200) {
+        	server.log("Request failed.");
+     		server.log(format("Response returned with status %d", res.statuscode));
+		}
+		// Pick the Bus Stop Indicator from the response
+		// format is [4,"1.0",1401143349197] [0,"W"]  where W is the indicator, otherwise null
+		// it's not valid JSON, try using regex
+		local ex = regexp(@",\d+.+,(\p\w+\d?\p)");
+		local result = ex.capture(res.body);
+		if (result) {
+		    indicator = res.body.slice(result[1].begin,result[1].end);
+		} else {
+		    indicator = "";
+		}
+		server.log(format("Indicator is %s", indicator));
+    	device.send("BusStopInd", indicator);
+		
+ 	}
 }       // end getBusTimes()
       
 
@@ -175,7 +216,7 @@ function getConditions() {
     
     // Chunk together our forecast into a printable string
     // server.log(format("Obtained forecast for ", weather.display_location.city));
-    forecastString += ("Temp "+weather.feelslike_c+"C");
+    forecastString += (" "+weather.feelslike_c+"C");
 
 
     // relay the formatting string to the device
