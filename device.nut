@@ -443,7 +443,7 @@ local state = button.read();
 			if (buttonState == 1) {
 				server.log("button pressed");
 				++buttonSelect;
-				buttonSelect = buttonSelect &7;
+				buttonSelect = buttonSelect &3;
 				server.log("buttonSelect");
 				agent.send("newbus",buttonSelect);
 			}
