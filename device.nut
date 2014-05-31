@@ -1,10 +1,8 @@
 
-//function buttonDowncheck();
-function buttonUpcheck();
 
 local blankString = "                    "; // String to blank a line.
 local buttonSelect = 0; //	Selection of destination
-local numberStops = 0;	// Length of Selector array in agent
+local numberStops = 3;	// Length of Selector array in agent
 
 // Timer handle
 local clockTimer;
@@ -314,11 +312,13 @@ function newDataHandeler(busInfo)
 
 function indicatorHandeler(indicator)
     {
-// 		buttonSelect = indicator.index;
+ 		numberStops = indicator.size;
   		lcd.setCursor(12, 0);
-   		lcd.writeString("       ");
-   		lcd.setCursor(12, 0);
-   		lcd.writeString("Stop"+indicator);
+   		lcd.writeString("        ");
+		if (indicator.text.len() > 0) {
+   			lcd.setCursor(12, 0);
+   			lcd.writeString("Stop"+indicator.text);
+		}
 	}
 
 function weatherHandeler(forecastString)
@@ -415,46 +415,44 @@ agent.on("weather",weatherHandeler);
 agent.on("busData",newDataHandeler);
 agent.on("BusStopInd",indicatorHandeler);
 
+// Debounce controls
+local ctlUp = {
+	count = 0,
+	state = 0,
+	seen = 0
+}
 
-
-buttonUp <- hardware.pin1;
-buttonDown <- hardware.pin2;
-buttonUp.configure(DIGITAL_IN_PULLUP,buttonUpcheck);
-buttonDown.configure(DIGITAL_IN_PULLUP,buttonDowncheck);
-buttonUp.count <- 0;
-buttonDown.count <- 0;
-buttonUp.state <- 0;
-buttonDown.state <- 0;
-
-//Create a zero-volt source at pin 5
-ground <- hardware.pin5;
-ground.configure(DIGITAL_OUT);
-ground.write(0);
-
+local ctlDown = {
+	count = 0,
+	state = 0,
+	seen = 0
+}
 
 function buttonUpcheck()	{
-	if (buttonUp.read())	{
+	if (hardware.pin1.read())	{
 			// button not pressed
-			if (--buttonUp.count == 0)	{
-				buttonUp.state = 0;
-				buttonUp.count = 0;
-	server.log("buttonUp released");
+			if (--ctlUp.count <= 0)	{
+				ctlUp.state = 0;
+				ctlUp.count = 0;
+//	server.log("buttonUp released");
 			} else {
 				imp.wakeup(0.010, buttonUpcheck);
 			}
 	}	else	{
 			// button is pressed
-			if (++buttonUp.count >= 4)	{
-				buttonUp.state = 1;
-				buttonUp.count = 4;
+			if (++ctlUp.count >= 8)	{
+				if (ctlUp.state != 1)	{
+					ctlUp.state = 1;
+					ctlUp.count = 8;
 	server.log("buttonUp pressed");
-			// Move up the list of stops
-			++buttonSelect;
-			// Wrap at the low and high ends
-		if (buttonSelect <= 0) { buttonSelect = numberStops-1; }
-		if (buttonSelect >= numberStops) { buttonSelect = 0; }
+					// Move up the list of stops
+					++buttonSelect;
+					// Wrap at the low and high ends
+					if (buttonSelect < 0) { buttonSelect = numberStops-1; }
+					if (buttonSelect >= numberStops) { buttonSelect = 0; }
 	server.log("buttonSelect: " + buttonSelect);
-		agent.send("newbus",buttonSelect);
+					agent.send("newbus",buttonSelect);
+				}
 			} else {
 				imp.wakeup(0.010, buttonUpcheck);
 			}
@@ -462,28 +460,30 @@ function buttonUpcheck()	{
 }
 
 function buttonDowncheck()	{
-	if (buttonDown.read())	{
+	if (hardware.pin2.read())	{
 			// button not pressed
-			if (--buttonDown.count == 0)	{
-				buttonDown.state = 0;
-				buttonDown.count = 0;
-	server.log("buttonDown released");
+			if (--ctlDown.count <= 0)	{
+				ctlDown.state = 0;
+				ctlDown.count = 0;
+//	server.log("buttonDown released");
 			} else {
 				imp.wakeup(0.010, buttonDowncheck);
 			}
 	}	else	{
 			// button is pressed
-			if (++buttonDown.count >= 4)	{
-				buttonDown.state = 1;
-				buttonDown.count = 4;
+			if (++ctlDown.count >= 8)	{
+				if (ctlDown.state != 1)	{
+					ctlDown.state = 1;
+					ctlDown.count = 8;
 	server.log("buttonDown pressed");
-			// Move down the list of stops
-			--buttonSelect;
-			// Wrap at the low and high ends
-		if (buttonSelect <= 0) { buttonSelect = numberStops-1; }
-		if (buttonSelect >= numberStops) { buttonSelect = 0; }
+					// Move down the list of stops
+					--buttonSelect;
+					// Wrap at the low and high ends
+					if (buttonSelect < 0) { buttonSelect = numberStops-1; }
+					if (buttonSelect >= numberStops) { buttonSelect = 0; }
 	server.log("buttonSelect: " + buttonSelect);
-		agent.send("newbus",buttonSelect);
+					agent.send("newbus",buttonSelect);
+				}
 			} else {
 				imp.wakeup(0.010, buttonDowncheck);
 			}
@@ -491,7 +491,13 @@ function buttonDowncheck()	{
 }
 
 
+hardware.pin1.configure(DIGITAL_IN_PULLUP,buttonUpcheck);
+hardware.pin2.configure(DIGITAL_IN_PULLUP,buttonDowncheck);
 
+//Create a zero-volt source at pin 5
+ground <- hardware.pin5;
+ground.configure(DIGITAL_OUT);
+ground.write(0);
 
 // fire updateClock() for the first time
 updateClock(); 

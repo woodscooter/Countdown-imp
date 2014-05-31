@@ -2,10 +2,11 @@
 // Countdown, with destination select
 
 // Put first-choice, second-choice and more bus stop numbers into this array:
-// Limit is 7 bus stops
-local Selector = ["57628", "47140", "58627"];
+// Recommended limit is 7 bus stops
+local Selector = ["57628", "51066", "47140", "58627", "50869","58363", "57660"];
 
-// Push button on Imp pin 1 toggles between the two destinations.
+
+// Push buttons on Imp pins 1, 2 cycle through destinations.
 
 // A list of local bus stops
 //const bustop = "47140";	// Test street
@@ -29,7 +30,10 @@ local tflURL;
 local indBASE = "http://countdown.api.tfl.gov.uk/interfaces/ura/instant_V1?StopCode1=";
 local indTAIL = "&StopAlso=true&ReturnList=StopPointIndicator";
 local indURL = "";
-local indicator;
+local indicator = {
+	text = "",
+	size = Selector.len()
+};
 
 // Selection of one from 7 bus stops (0..6)
 local destSelect =0;	// 0 = first choice, 1 = second choice destination, ...
@@ -63,7 +67,8 @@ function newDestination (dest) {
 	destSelect = dest;
 	prevbusInfo=[{string=""},{string=""},{string=""}];
 	indURL = "";
-	indicator = "";
+	indicator.text = "";
+	indicator.size = Selector.len();
  	getBusTimes();
 }
 
@@ -168,11 +173,11 @@ function getBusTimes() {
 		local ex = regexp(@",\d+.+,(\p\w+\d?\p)");
 		local result = ex.capture(res.body);
 		if (result) {
-		    indicator = res.body.slice(result[1].begin,result[1].end);
+		    indicator.text = res.body.slice(result[1].begin,result[1].end);
 		} else {
-		    indicator = "";
+		    indicator.text = "";
 		}
-		server.log(format("Indicator is %s", indicator));
+		server.log(format("Indicator is %s", indicator.text));
     	device.send("BusStopInd", indicator);
 		
  	}
