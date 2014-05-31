@@ -40,8 +40,8 @@ local destSelect =0;	// 0 = first choice, 1 = second choice destination, ...
 
 // Add your own wunderground API Key here. 
 // Register for free at http://api.wunderground.com/weather/api/
-// local myAPIKey = "b7406fdedec26d9a"; // Paul's 
-local myAPIKey = "7cefcf88b62b9f0b";    // Ian's
+local myAPIKey = "b7406fdedec26d9a"; // Paul's 
+// local myAPIKey = "7cefcf88b62b9f0b";    // Ian's
 local wunderBaseURL = "http://api.wunderground.com/api/"+myAPIKey+"/";
 
 // Add the zip code you want to get the forecast for here.
