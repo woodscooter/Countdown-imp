@@ -315,10 +315,10 @@ function newDataHandeler(busInfo)
 function indicatorHandeler(indicator)
     {
 // 		buttonSelect = indicator.index;
-  		lcd.setCursor(15, 0);
-   		lcd.writeString("     ");
-   		lcd.setCursor(15, 0);
-   		lcd.writeString(indicator);
+  		lcd.setCursor(12, 0);
+   		lcd.writeString("       ");
+   		lcd.setCursor(12, 0);
+   		lcd.writeString("Stop"+indicator);
 	}
 
 function weatherHandeler(forecastString)
