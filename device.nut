@@ -1,10 +1,10 @@
- 
 
+//function buttonDowncheck();
+function buttonUpcheck();
 
 local blankString = "                    "; // String to blank a line.
-local buttonState = 0; // Button State.
-local buttonCount = 0; // Button Count.
 local buttonSelect = 0; //	Selection of destination
+local numberStops = 0;	// Length of Selector array in agent
 
 // Timer handle
 local clockTimer;
@@ -325,9 +325,9 @@ function weatherHandeler(forecastString)
     {
         // update the display screen with the new data
         server.log(forecastString);
-        lcd.setCursor(6, 0);
+        lcd.setCursor(5, 0);
         lcd.writeString("      ");
-        lcd.setCursor(6, 0);
+        lcd.setCursor(5, 0);
         lcd.writeString(forecastString);
     }
 
@@ -416,44 +416,150 @@ agent.on("busData",newDataHandeler);
 agent.on("BusStopInd",indicatorHandeler);
 
 
-// Push button with debounce
-button <- hardware.pin1;
 
-function buttonCheck() {
+buttonUp <- hardware.pin1;
+buttonDown <- hardware.pin2;
+buttonUp.configure(DIGITAL_IN_PULLUP,buttonUpcheck);
+buttonDown.configure(DIGITAL_IN_PULLUP,buttonDowncheck);
+buttonUp.count <- 0;
+buttonDown.count <- 0;
+buttonUp.state <- 0;
+buttonDown.state <- 0;
 
-local state = button.read();
+//Create a zero-volt source at pin 5
+ground <- hardware.pin5;
+ground.configure(DIGITAL_OUT);
+ground.write(0);
 
-	if (state == 1) {
-		if (--buttonCount > 0)	{
-       		imp.wakeup(0.200, buttonCheck);
-		}
-		else {
-			if (buttonState == 0) {
-				server.log("button released");
+
+function buttonUpcheck()	{
+	if (buttonUp.read())	{
+			// button not pressed
+			if (--buttonUp.count == 0)	{
+				buttonUp.state = 0;
+				buttonUp.count = 0;
+	server.log("buttonUp released");
+			} else {
+				imp.wakeup(0.010, buttonUpcheck);
 			}
-			buttonState = 1;
-			buttonCount = 0;
-		}
-	}
-	else	{
-		if (++buttonCount < 3)	{
-       		imp.wakeup(0.200, buttonCheck);
-		}
-		else {
-			if (buttonState == 1) {
-				server.log("button pressed");
-				++buttonSelect;
-				buttonSelect = buttonSelect &3;
-				server.log("buttonSelect");
-				agent.send("newbus",buttonSelect);
+	}	else	{
+			// button is pressed
+			if (++buttonUp.count >= 4)	{
+				buttonUp.state = 1;
+				buttonUp.count = 4;
+	server.log("buttonUp pressed");
+			// Move up the list of stops
+			++buttonSelect;
+			// Wrap at the low and high ends
+		if (buttonSelect <= 0) { buttonSelect = numberStops-1; }
+		if (buttonSelect >= numberStops) { buttonSelect = 0; }
+	server.log("buttonSelect: " + buttonSelect);
+		agent.send("newbus",buttonSelect);
+			} else {
+				imp.wakeup(0.010, buttonUpcheck);
 			}
-			buttonState = 0;
-			buttonCount = 3;
-		}
 	}
 }
-button.configure(DIGITAL_IN_PULLUP, buttonCheck)
 
-updateClock(); // fire updateClock() for the first time
+function buttonDowncheck()	{
+	if (buttonDown.read())	{
+			// button not pressed
+			if (--buttonDown.count == 0)	{
+				buttonDown.state = 0;
+				buttonDown.count = 0;
+	server.log("buttonDown released");
+			} else {
+				imp.wakeup(0.010, buttonDowncheck);
+			}
+	}	else	{
+			// button is pressed
+			if (++buttonDown.count >= 4)	{
+				buttonDown.state = 1;
+				buttonDown.count = 4;
+	server.log("buttonDown pressed");
+			// Move down the list of stops
+			--buttonSelect;
+			// Wrap at the low and high ends
+		if (buttonSelect <= 0) { buttonSelect = numberStops-1; }
+		if (buttonSelect >= numberStops) { buttonSelect = 0; }
+	server.log("buttonSelect: " + buttonSelect);
+		agent.send("newbus",buttonSelect);
+			} else {
+				imp.wakeup(0.010, buttonDowncheck);
+			}
+	}
+}
 
 
+
+
+// fire updateClock() for the first time
+updateClock(); 
+
+
+/*
+
+// Push button with debounce
+class Button {
+	state = null;
+	count = null;
+	sample = null;
+	direction = null;
+
+	constructor(conn,updown)
+	{
+		sample = conn;
+//		sample.configure(DIGITAL_IN_PULLUP);
+		direction = updown;
+		state = 0;
+		count = 0;
+	}
+
+	function check ()	{
+		if (this.sample.read())	{
+			// button not pressed
+			if (--this.count == 0)	{
+				this.state = 0;
+				this.count = 0;
+	server.log("button released");
+			} else {
+				imp.wakeup(0.010, this.check);
+			}
+			
+		} else {
+			// button is pressed
+			if (++this.count >= 4)	{
+				this.state = 1;
+				this.count = 4;
+	server.log("button pressed");
+			// Move up or down the list of stops
+			++buttonSelect;
+			// Wrap at the low and high ends
+		if (buttonSelect < 0) { buttonSelect = numberStops; }
+		if (buttonSelect >= numberStops) { buttonSelect = 0; }
+	server.log("buttonSelect: " + buttonSelect);
+		agent.send("newbus",buttonSelect);
+			} else {
+				imp.wakeup(0.010, this.check);
+			}
+		}
+	}	// end function
+
+
+} // end class
+
+// Instantiate two instances of the class
+local button1 = Button(hardware.pin1, 1);	// increase
+local button2 = Button(hardware.pin2, -1);	// decrease
+button1.configure(DIGITAL_IN_PULLUP,button1.check);
+button2.configure(DIGITAL_IN_PULLUP,button2.check);
+
+//Create a zero-volt source at pin 5
+ground <- hardware.pin5;
+ground.configure(DIGITAL_OUT);
+ground.write(0);
+
+// fire updateClock() for the first time
+updateClock(); 
+
+*/
