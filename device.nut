@@ -1,5 +1,4 @@
 
-
 local blankString = "                    "; // String to blank a line.
 local buttonSelect = 0; //	Selection of destination
 local numberStops = 3;	// Length of Selector array in agent
